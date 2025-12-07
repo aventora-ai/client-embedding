@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aventora Chatbot Embedding Examples</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Aventora Chatbot Embedding Examples</h1>
+            <p>Learn how to embed the Aventora Chatbot in your website</p>
+        </div>
+
+        <div class="content">
+            <!-- Introduction Section -->
+            <div class="section">
+                <h2>📚 Introduction</h2>
+                <p>This page demonstrates how to embed the Aventora Chatbot in your website using secure token-based authentication. All chatbot access requires authentication via API keys.</p>
+                
+                <div class="info-box warning">
+                    <strong>🔐 Authentication Required:</strong> The Aventora Chatbot requires token-based authentication. You must:
+                    <ol style="margin-top: 10px; margin-left: 20px;">
+                        <li>Get a Domain API Key from the Aventora Admin Panel</li>
+                        <li>Configure it in your server environment variables</li>
+                        <li>Generate tokens server-side using the API key</li>
+                        <li>Use tokens to authenticate chatbot access</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Authentication Setup Section -->
+            <div class="section">
+                <h2>🔑 Step 1: Get Your API Key</h2>
+                <p>Before embedding the chatbot, you need to obtain a Domain API Key from the Aventora Admin Panel.</p>
+                
+                <div class="info-box">
+                    <h4>How to Get Your API Key:</h4>
+                    <ol style="margin-left: 20px; margin-top: 10px;">
+                        <li><strong>Log into Aventora Admin Panel</strong> - Access your admin dashboard</li>
+                        <li><strong>Navigate to API Keys</strong> - Go to Settings or Developer Tools section</li>
+                        <li><strong>Create a New Domain API Key</strong> - Click "Generate API Key" or "Create New Key"</li>
+                        <li><strong>Set Permissions</strong> - Ensure it has <code>token_generation</code> permission</li>
+                        <li><strong>Copy the API Key</strong> - Save it securely (it won't be shown again!)</li>
+                    </ol>
+                </div>
+
+                <div class="info-box success">
+                    <strong>✅ Security Best Practice:</strong> Never expose your API key in client-side code. Always keep it in server-side environment variables.
+                </div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="section">
+                <h2>⚙️ Step 2: Configure Your Server</h2>
+                <p>Set up your environment variables with your API key and chatbot URLs.</p>
+                
+                <div class="code-block">
+                    <code># .env file
+DOMAIN_CHATBOT_API_KEY=your-domain-api-key-here
+DOMAIN_CHATBOT_API_URL=https://api.aventora.ai
+CHATBOT_BASE_URL=https://yourdomain.aventora.app</code>
+                </div>
+
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="chatbotUrl">Chatbot Base URL:</label>
+                        <input type="text" id="chatbotUrl" placeholder="https://yourdomain.aventora.app" value="https://aventora.aventora.app">
+                    </div>
+                    <div class="form-group">
+                        <label for="language">Language:</label>
+                        <select id="language">
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="updateConfiguration()">Update Configuration & Load Chatbot</button>
+                </div>
+                <div id="configStatus" class="status"></div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div class="section">
+                <h2>⚙️ Configuration</h2>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="chatbotUrl">Chatbot Base URL:</label>
+                        <input type="text" id="chatbotUrl" placeholder="https://aventora.aventora.app" value="https://aventora.aventora.app">
+                    </div>
+                    <div class="form-group">
+                        <label for="language">Language:</label>
+                        <select id="language">
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="updateConfiguration()">Update Configuration</button>
+                </div>
+                <div id="configStatus" class="status"></div>
+            </div>
+
+            <!-- Examples Section -->
+            <div class="section">
+                <h2>💡 Embedding Examples</h2>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('embedded')">Embedded</button>
+                    <button class="tab" onclick="showTab('floating')">Floating</button>
+                    <button class="tab" onclick="showTab('fixed')">Fixed</button>
+                    <button class="tab" onclick="showTab('code')">Code Examples</button>
+                </div>
+
+                <!-- Embedded Tab -->
+                <div id="embedded" class="tab-content active">
+                    <h3>Embedded Mode</h3>
+                    <p>Embed the chatbot directly in your page content. Perfect for dedicated chat pages or sections.</p>
+                    
+                    <div class="info-box">
+                        <strong>Use Case:</strong> When you want the chatbot to be part of your page layout, like in a contact page or support section.
+                    </div>
+
+                    <div class="demo-container">
+                        <h4>Live Demo:</h4>
+                        <iframe id="embeddedFrame" class="embedded-chatbot" title="Aventora Chatbot - Embedded"></iframe>
+                    </div>
+
+                    <div class="code-block">
+                        <code>&lt;!-- Embedded Chatbot with Token Authentication --&gt;
+&lt;iframe 
+    id="aventora-chatbot"
+    src="YOUR_CHATBOT_URL/autoconnect?token=YOUR_TOKEN&lang=en"
+    title="Aventora Chatbot"
+    style="width: 100%; height: 600px; border: none; border-radius: 12px;"
+    allow="microphone; camera"&gt;
+&lt;/iframe&gt;
+
+&lt;script&gt;
+// Fetch token from your server
+async function loadChatbot() {
+    try {
+        const response = await fetch('/api/chatbot-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: 'en' })
+        });
+        const data = await response.json();
+        document.getElementById('aventora-chatbot').src = 
+            `YOUR_CHATBOT_URL/autoconnect?token=${data.token}&lang=en`;
+    } catch (error) {
+        console.error('Failed to load chatbot:', error);
+    }
+}
+loadChatbot();
+&lt;/script&gt;</code>
+                    </div>
+                </div>
+
+                <!-- Floating Tab -->
+                <div id="floating" class="tab-content">
+                    <h3>Floating Mode</h3>
+                    <p>Display the chatbot as a floating widget in the corner of your page. Users can minimize/restore it.</p>
+                    
+                    <div class="info-box">
+                        <strong>Use Case:</strong> Perfect for adding a chatbot to any page without disrupting the layout. The chatbot appears as a button that expands when clicked.
+                    </div>
+
+                    <div class="demo-container">
+                        <h4>Live Demo:</h4>
+                        <p>Look at the bottom-right corner of this page for the floating chatbot button.</p>
+                        <p>Click it to open the chatbot, and use the minimize button to collapse it.</p>
+                    </div>
+
+                    <div class="code-block">
+                        <code>&lt;!-- Floating Chatbot Implementation --&gt;
+&lt;script&gt;
+let chatbotWidget = null;
+let toggleButton = null;
+let isExpanded = false;
+
+function initFloatingChatbot() {
+    // Create toggle button
+    toggleButton = document.createElement('button');
+    toggleButton.innerHTML = '💬';
+    toggleButton.className = 'floating-button';
+    toggleButton.onclick = toggleChatbot;
+    document.body.appendChild(toggleButton);
+
+    // Create widget container
+    chatbotWidget = document.createElement('div');
+    chatbotWidget.className = 'floating-widget-container';
+    
+    const iframe = document.createElement('iframe');
+    iframe.src = 'YOUR_CHATBOT_URL/autoconnect?lang=en';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    iframe.allow = 'microphone; camera';
+    
+    const minimizeBtn = document.createElement('button');
+    minimizeBtn.innerHTML = '−';
+    minimizeBtn.className = 'minimize-btn';
+    minimizeBtn.onclick = toggleChatbot;
+    
+    chatbotWidget.appendChild(iframe);
+    chatbotWidget.appendChild(minimizeBtn);
+    document.body.appendChild(chatbotWidget);
+}
+
+function toggleChatbot() {
+    isExpanded = !isExpanded;
+    chatbotWidget.classList.toggle('show', isExpanded);
+    toggleButton.style.display = isExpanded ? 'none' : 'flex';
+}
+
+// Initialize on page load
+initFloatingChatbot();
+&lt;/script&gt;</code>
+                    </div>
+                </div>
+
+                <!-- Fixed Tab -->
+                <div id="fixed" class="tab-content">
+                    <h3>Fixed/Fullscreen Mode</h3>
+                    <p>Display the chatbot as a fullscreen overlay. Useful for mobile or when you want maximum focus on the chat.</p>
+                    
+                    <div class="info-box warning">
+                        <strong>Note:</strong> This mode takes over the entire viewport. Make sure to provide a way for users to close it.
+                    </div>
+
+                    <div class="demo-container">
+                        <h4>Live Demo:</h4>
+                        <button class="btn" onclick="showFixedChatbot()">Open Fullscreen Chatbot</button>
+                    </div>
+
+                    <div class="code-block">
+                        <code>&lt;!-- Fixed/Fullscreen Chatbot --&gt;
+&lt;button onclick="openFullscreenChatbot()"&gt;Open Chatbot&lt;/button&gt;
+
+&lt;div id="fullscreen-chatbot" style="display: none; position: fixed; inset: 0; z-index: 9999; background: white;"&gt;
+    &lt;button onclick="closeFullscreenChatbot()" style="position: absolute; top: 20px; right: 20px; z-index: 10000;"&gt;✕&lt;/button&gt;
+    &lt;iframe 
+        src="YOUR_CHATBOT_URL/autoconnect?lang=en"
+        style="width: 100%; height: 100%; border: none;"
+        allow="microphone; camera"&gt;
+    &lt;/iframe&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+function openFullscreenChatbot() {
+    document.getElementById('fullscreen-chatbot').style.display = 'block';
+}
+
+function closeFullscreenChatbot() {
+    document.getElementById('fullscreen-chatbot').style.display = 'none';
+}
+&lt;/script&gt;</code>
+                    </div>
+                </div>
+
+                <!-- Code Examples Tab -->
+                <div id="code" class="tab-content">
+                    <h3>Complete Code Examples</h3>
+                    
+                    <h4>1. Embedded Chatbot with Token Authentication</h4>
+                    <div class="code-block">
+                        <code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;My Website with Chatbot&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Welcome to My Website&lt;/h1&gt;
+    
+    &lt;!-- Embedded Chatbot --&gt;
+    &lt;iframe 
+        id="chatbot"
+        style="width: 100%; height: 600px; border: none; border-radius: 12px;"
+        title="Aventora Chatbot"
+        allow="microphone; camera"&gt;
+    &lt;/iframe&gt;
+    
+    &lt;script&gt;
+        // Fetch token from your server endpoint
+        async function loadChatbot() {
+            try {
+                const response = await fetch('/api/chatbot-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ language: 'en' })
+                });
+                const data = await response.json();
+                document.getElementById('chatbot').src = 
+                    `https://yourdomain.aventora.app/autoconnect?token=${data.token}&lang=en`;
+            } catch (error) {
+                console.error('Failed to load chatbot:', error);
+            }
+        }
+        loadChatbot();
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code>
+                    </div>
+
+                    <h4>2. Floating Widget (HTML + JavaScript)</h4>
+                    <div class="code-block">
+                        <code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;My Website with Floating Chatbot&lt;/title&gt;
+    &lt;style&gt;
+        .chatbot-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+        }
+        .chatbot-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            height: 600px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 9999;
+            display: none;
+        }
+        .chatbot-widget.show { display: block; }
+        .chatbot-widget iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 16px;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Welcome to My Website&lt;/h1&gt;
+    
+    &lt;button class="chatbot-button" onclick="toggleChatbot()"&gt;💬&lt;/button&gt;
+    &lt;div class="chatbot-widget" id="chatbotWidget"&gt;
+        &lt;iframe id="chatbotFrame" allow="microphone; camera"&gt;&lt;/iframe&gt;
+    &lt;/div&gt;
+    
+    &lt;script&gt;
+        let chatbotToken = null;
+        
+        async function loadToken() {
+            const response = await fetch('/api/chatbot-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: 'en' })
+            });
+            const data = await response.json();
+            chatbotToken = data.token;
+        }
+        
+        function toggleChatbot() {
+            const widget = document.getElementById('chatbotWidget');
+            const isOpen = widget.classList.contains('show');
+            
+            if (!isOpen && !chatbotToken) {
+                loadToken().then(() => {
+                    document.getElementById('chatbotFrame').src = 
+                        `https://yourdomain.aventora.app/autoconnect?token=${chatbotToken}&lang=en`;
+                    widget.classList.add('show');
+                });
+            } else {
+                widget.classList.toggle('show');
+            }
+        }
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code>
+                    </div>
+
+                    <h4>3. React Component Example</h4>
+                    <div class="code-block">
+                        <code>import React, { useState, useEffect } from 'react';
+
+function AventoraChatbot({ baseUrl, language = 'en' }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [token, setToken] = useState(null);
+    
+    useEffect(() => {
+        // Fetch token on component mount
+        fetch('/api/chatbot-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language })
+        })
+        .then(res => res.json())
+        .then(data => setToken(data.token))
+        .catch(err => console.error('Failed to fetch token:', err));
+    }, [language]);
+    
+    return (
+        &lt;&gt;
+            {!isOpen && (
+                &lt;button 
+                    onClick={() => setIsOpen(true)}
+                    style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        background: '#667eea',
+                        color: 'white',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '24px'
+                    }}
+                &gt;
+                    💬
+                &lt;/button&gt;
+            )}
+            
+            {isOpen && (
+                &lt;div style={{
+                    position: 'fixed',
+                    bottom: '20px',
+                    right: '20px',
+                    width: '400px',
+                    height: '600px',
+                    borderRadius: '16px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                    zIndex: 9999
+                }}&gt;
+                    &lt;button onClick={() => setIsOpen(false)}&gt;✕&lt;/button&gt;
+                    &lt;iframe 
+                        src={`${baseUrl}/autoconnect?token=${token}&lang=${language}`}
+                        style={{ width: '100%', height: '100%', border: 'none' }}
+                        allow="microphone; camera"
+                    /&gt;
+                &lt;/div&gt;
+            )}
+        &lt;/&gt;
+    );
+}
+
+export default AventoraChatbot;</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Reference Section -->
+            <div class="section">
+                <h2>📖 API Reference</h2>
+                
+                <h3>Autoconnect Endpoint</h3>
+                <p>The chatbot is accessed via the <code>/autoconnect</code> endpoint on your chatbot base URL.</p>
+                
+                <div class="code-block">
+                    <code>GET {CHATBOT_BASE_URL}/autoconnect?lang={language}&token={token}</code>
+                </div>
+
+                <h3>Query Parameters</h3>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>token</strong> (required): Authentication token obtained from your server's <code>/api/chatbot-token</code> endpoint</li>
+                    <li><strong>lang</strong> (optional): Language code (e.g., 'en', 'es', 'fr'). Default: 'en'</li>
+                </ul>
+
+                <h3>Token Generation Endpoint</h3>
+                <p>Your server should implement a token generation endpoint that uses your Domain API Key:</p>
+                <div class="code-block">
+                    <code>POST /api/chatbot-token
+Content-Type: application/json
+
+Request Body:
+{
+  "language": "en"  // optional, defaults to "en"
+}
+
+Response:
+{
+  "token": "uuid-token-string",
+  "expires_at": "2024-01-01T00:00:00Z"
+}</code>
+                </div>
+
+                <h3>Iframe Attributes</h3>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>allow="microphone; camera"</strong>: Required for voice/video features</li>
+                    <li><strong>title</strong>: Accessibility label for the iframe</li>
+                </ul>
+            </div>
+
+            <!-- Best Practices Section -->
+            <div class="section">
+                <h2>✨ Best Practices</h2>
+                
+                <ul style="margin-left: 20px;">
+                    <li><strong>Responsive Design:</strong> Make sure your chatbot widget is responsive on mobile devices</li>
+                    <li><strong>Z-Index:</strong> Use appropriate z-index values to ensure the chatbot appears above other content</li>
+                    <li><strong>Loading States:</strong> Consider showing a loading indicator while the chatbot loads</li>
+                    <li><strong>Error Handling:</strong> Handle cases where the chatbot fails to load gracefully</li>
+                    <li><strong>Accessibility:</strong> Ensure proper ARIA labels and keyboard navigation</li>
+                    <li><strong>Performance:</strong> Load the chatbot asynchronously to avoid blocking page load</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Chatbot Widget (Demo) -->
+    <button id="floatingToggleBtn" class="floating-button" onclick="toggleFloatingChatbot()" style="display: none;">💬</button>
+    <div id="floatingWidget" class="floating-widget-container">
+        <button class="minimize-btn" onclick="toggleFloatingChatbot()">−</button>
+        <iframe id="floatingFrame" style="width: 100%; height: 100%; border: none;" allow="microphone; camera"></iframe>
+    </div>
+
+    <!-- Fixed/Fullscreen Chatbot -->
+    <div id="fixedChatbot" style="display: none; position: fixed; inset: 0; z-index: 99999; background: white;">
+        <button onclick="closeFixedChatbot()" style="position: absolute; top: 20px; right: 20px; z-index: 100000; width: 40px; height: 40px; background: #f0f0f0; border: none; border-radius: 50%; cursor: pointer; font-size: 20px;">✕</button>
+        <iframe id="fixedFrame" style="width: 100%; height: 100%; border: none;" allow="microphone; camera"></iframe>
+    </div>
+
+    <script>
+        // Configuration
+        let chatbotBaseUrl = 'https://aventora.aventora.app';
+        let selectedLanguage = 'en';
+        let currentToken = null;
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadChatbotWithToken();
+        });
+
+        // Fetch token from server
+        async function fetchToken(language = 'en') {
+            try {
+                const response = await fetch('/api/chatbot-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        language: language,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to generate token');
+                }
+
+                const data = await response.json();
+                return data.token;
+            } catch (error) {
+                console.error('Error fetching token:', error);
+                throw error;
+            }
+        }
+
+        // Load chatbot with token
+        async function loadChatbotWithToken() {
+            try {
+                showStatus('configStatus', 'Generating token...', 'success');
+                currentToken = await fetchToken(selectedLanguage);
+                updateEmbeddedChatbot();
+                showStatus('configStatus', 'Chatbot loaded successfully!', 'success');
+            } catch (error) {
+                showStatus('configStatus', `Error: ${error.message}. Make sure DOMAIN_CHATBOT_API_KEY is configured.`, 'error');
+            }
+        }
+
+        async function updateConfiguration() {
+            const url = document.getElementById('chatbotUrl').value.trim();
+            const lang = document.getElementById('language').value;
+            
+            if (!url) {
+                showStatus('configStatus', 'Please enter a chatbot URL', 'error');
+                return;
+            }
+
+            chatbotBaseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+            selectedLanguage = lang;
+            
+            await loadChatbotWithToken();
+        }
+
+        function updateEmbeddedChatbot() {
+            if (!currentToken) return;
+            const iframe = document.getElementById('embeddedFrame');
+            iframe.src = `${chatbotBaseUrl}/autoconnect?token=${currentToken}&lang=${selectedLanguage}`;
+        }
+
+        async function updateFloatingChatbot() {
+            if (!currentToken) {
+                currentToken = await fetchToken(selectedLanguage);
+            }
+            const iframe = document.getElementById('floatingFrame');
+            iframe.src = `${chatbotBaseUrl}/autoconnect?token=${currentToken}&lang=${selectedLanguage}`;
+        }
+
+        function toggleFloatingChatbot() {
+            const widget = document.getElementById('floatingWidget');
+            const button = document.getElementById('floatingToggleBtn');
+            const isExpanded = widget.classList.contains('show');
+            
+            if (isExpanded) {
+                widget.classList.remove('show');
+                button.style.display = 'flex';
+            } else {
+                widget.classList.add('show');
+                button.style.display = 'none';
+                updateFloatingChatbot();
+            }
+        }
+
+        async function showFixedChatbot() {
+            if (!currentToken) {
+                currentToken = await fetchToken(selectedLanguage);
+            }
+            const container = document.getElementById('fixedChatbot');
+            const iframe = document.getElementById('fixedFrame');
+            iframe.src = `${chatbotBaseUrl}/autoconnect?token=${currentToken}&lang=${selectedLanguage}`;
+            container.style.display = 'block';
+        }
+
+        function closeFixedChatbot() {
+            document.getElementById('fixedChatbot').style.display = 'none';
+        }
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Show floating button when floating tab is active
+            if (tabName === 'floating') {
+                document.getElementById('floatingToggleBtn').style.display = 'flex';
+            } else {
+                document.getElementById('floatingToggleBtn').style.display = 'none';
+                document.getElementById('floatingWidget').classList.remove('show');
+            }
+        }
+
+        function showStatus(elementId, message, type) {
+            const statusEl = document.getElementById(elementId);
+            statusEl.textContent = message;
+            statusEl.className = `status ${type} show`;
+            
+            setTimeout(() => {
+                statusEl.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
