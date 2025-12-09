@@ -34,7 +34,7 @@ app.post('/api/chatbot-token', async (req, res) => {
     const { domain, language = 'en' } = req.body;
 
     // Get configuration from environment variables
-    const domainApiKey = process.env.DOMAIN_CHATBOT_API_KEY;
+    let domainApiKey = process.env.DOMAIN_CHATBOT_API_KEY;
     const domainChatbotApiUrl = process.env.DOMAIN_CHATBOT_API_URL || 'https://api.aventora.ai';
 
     if (!domainApiKey) {
@@ -45,6 +45,16 @@ app.post('/api/chatbot-token', async (req, res) => {
       });
     }
 
+    // Trim whitespace from API key (common issue)
+    domainApiKey = domainApiKey.trim();
+
+    // Log API key prefix for debugging (first 8 chars + last 4 chars, e.g., "avk_xxxx...yyyy")
+    const apiKeyPrefix = domainApiKey.length > 12 
+      ? `${domainApiKey.substring(0, 8)}...${domainApiKey.substring(domainApiKey.length - 4)}`
+      : '***';
+    console.log(`[chatbot-token] Using API key: ${apiKeyPrefix}`);
+    console.log(`[chatbot-token] API URL: ${domainChatbotApiUrl}`);
+
     // Build token generation request
     // The username "anonymous" will be converted to "{domain}_anonymous" by the API
     const tokenRequest = {
@@ -53,9 +63,12 @@ app.post('/api/chatbot-token', async (req, res) => {
       expires_in_hours: 24, // Token valid for 24 hours
     };
 
+    const apiEndpoint = `${domainChatbotApiUrl}/auth/api/v1/tokens/generate`;
+    console.log(`[chatbot-token] Requesting token from: ${apiEndpoint}`);
+
     // Generate token via Domain Chatbot API
     // The API endpoint is: /auth/api/v1/tokens/generate
-    const tokenResponse = await fetch(`${domainChatbotApiUrl}/auth/api/v1/tokens/generate`, {
+    const tokenResponse = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -67,10 +80,24 @@ app.post('/api/chatbot-token', async (req, res) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('[chatbot-token] Token generation failed:', tokenResponse.status, errorText);
+      console.error('[chatbot-token] API Key prefix used:', apiKeyPrefix);
+      console.error('[chatbot-token] API URL used:', domainChatbotApiUrl);
+      
+      // Provide more specific error hints
+      let hint = 'Verify your DOMAIN_CHATBOT_API_KEY is correct and has token generation permissions';
+      if (tokenResponse.status === 401) {
+        hint = 'API key is invalid, expired, or revoked. Check: 1) Key is correct (no extra spaces), 2) Key exists in production database, 3) Key is active (not revoked), 4) Key has not expired, 5) Using correct API URL for production';
+      }
+      
       return res.status(tokenResponse.status).json({
         error: 'Failed to generate chatbot token',
         details: errorText,
-        hint: 'Verify your DOMAIN_CHATBOT_API_KEY is correct and has token generation permissions'
+        hint: hint,
+        debug: {
+          apiUrl: domainChatbotApiUrl,
+          apiKeyPrefix: apiKeyPrefix,
+          statusCode: tokenResponse.status
+        }
       });
     }
 

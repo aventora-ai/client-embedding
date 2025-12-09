@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "verify-key": "node verify-api-key.js"
   },
   "keywords": [
     "aventora",
