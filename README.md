@@ -98,6 +98,8 @@ The application includes complete, copy-paste ready code examples for:
 ```
 client-embedding/
 ├── server.js          # Express server
+├── verify-api-key.js  # API key verification utility
+├── check-key-hash.js  # Key hash checking utility
 ├── package.json       # Dependencies
 ├── .env.example       # Environment variables template
 ├── README.md          # This file
@@ -133,6 +135,88 @@ The chatbot is accessed via the `/autoconnect` endpoint with a token:
 **Query Parameters:**
 - `token` (required): Authentication token obtained from `/api/chatbot-token`
 - `lang` (optional): Language code (e.g., 'en', 'es', 'fr'). Default: 'en'
+
+## 🔍 Utility Functions
+
+### Verify API Key
+
+The `verify-api-key.js` utility is a diagnostic tool that helps you verify your API key configuration before deploying your application.
+
+#### Usage
+
+Run the verification script:
+
+```bash
+node verify-api-key.js
+```
+
+#### What It Checks
+
+The utility performs the following diagnostic checks:
+
+1. **Environment Variable Loading**
+   - Verifies that `DOMAIN_CHATBOT_API_KEY` is set in your environment
+   - Displays the API key prefix and suffix (for security, never shows the full key)
+   - Shows the configured API URL
+
+2. **API Key Format Validation**
+   - Checks for leading/trailing whitespace
+   - Verifies key length
+   - Calculates and displays the SHA256 hash (used by the backend for validation)
+
+3. **API Endpoint Testing**
+   - Attempts to generate a test token using your API key
+   - Validates the API key against the production API
+   - Provides detailed error messages if validation fails
+
+#### Output Example
+
+When successful:
+```
+🔍 API Key Diagnostic Tool
+
+============================================================
+
+1️⃣ Environment Variables:
+   DOMAIN_CHATBOT_API_KEY: abc12345...xyz9 (64 chars)
+   DOMAIN_CHATBOT_API_URL: https://api.aventora.ai
+
+2️⃣ API Key Format:
+   Length: 64 characters
+   Prefix: abc12345
+   Suffix: xyz9
+   SHA256 Hash: 1a2b3c4d5e6f7890...
+
+3️⃣ Testing API Endpoint:
+   URL: https://api.aventora.ai/auth/api/v1/tokens/generate
+   Sending request...
+   Status: 200 OK
+
+✅ SUCCESS! API key is valid
+   Token generated: Yes
+   Expires at: 2024-01-02T00:00:00Z
+   Domain: yourdomain.aventora.app
+
+============================================================
+```
+
+#### When to Use
+
+Use this utility when:
+- Setting up a new environment or deployment
+- Troubleshooting authentication issues
+- Verifying API key configuration before going to production
+- Testing API key validity after rotating keys
+
+#### Troubleshooting with the Utility
+
+If the verification fails, the utility provides specific guidance:
+
+- **401 Unauthorized**: Check API key exists in database, is active, and hasn't expired
+- **Connection Errors**: Verify network connectivity and API URL correctness
+- **Missing Environment Variable**: Ensure `.env` file exists and contains `DOMAIN_CHATBOT_API_KEY`
+
+The utility also provides SQL queries you can run to check the API key status in the database.
 
 ## 📝 Usage Examples
 
@@ -332,6 +416,7 @@ GET {CHATBOT_BASE_URL}/autoconnect?token={token}&lang={language}
 
 1. **Check API Key Configuration:**
    - Verify `DOMAIN_CHATBOT_API_KEY` is set in your `.env` file
+   - Run the verification utility: `node verify-api-key.js`
    - Ensure the API key has `token_generation` permission
    - Check server logs for token generation errors
 
