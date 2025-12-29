@@ -128,7 +128,8 @@ CHATBOT_BASE_URL=https://yourdomain.aventora.app</code>
 
                     <div class="demo-container">
                         <h4>Live Demo:</h4>
-                        <iframe id="embeddedFrame" class="embedded-chatbot" title="Aventora Chatbot - Embedded"></iframe>
+                        <div id="iframeLoading" style="padding: 20px; text-align: center; color: #666;">Loading chatbot...</div>
+                        <iframe id="embeddedFrame" class="embedded-chatbot" title="Aventora Chatbot - Embedded" allow="microphone; camera" style="display: none;"></iframe>
                     </div>
 
                     <div class="code-block">
@@ -534,13 +535,46 @@ Response:
 
     <script>
         // Configuration
-        let chatbotBaseUrl = 'https://aventora.aventora.app';
+        let chatbotBaseUrl = null; // Will be loaded from server
         let selectedLanguage = 'en';
         let currentToken = null;
 
         // Initialize on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            loadChatbotWithToken();
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Load configuration from server
+            try {
+                console.log('Loading configuration from server...');
+                const configResponse = await fetch('/api/config');
+                const config = await configResponse.json();
+                console.log('Configuration received:', config);
+                if (config.chatbotBaseUrl) {
+                    chatbotBaseUrl = config.chatbotBaseUrl;
+                    console.log('Using chatbotBaseUrl from config:', chatbotBaseUrl);
+                    // Update the input field if it exists
+                    const urlInput = document.getElementById('chatbotUrl');
+                    if (urlInput) {
+                        urlInput.value = chatbotBaseUrl;
+                    }
+                } else {
+                    // Fallback to default if not configured
+                    chatbotBaseUrl = 'https://aventora.aventora.app';
+                    console.warn('CHATBOT_BASE_URL not configured in .env, using default:', chatbotBaseUrl);
+                }
+            } catch (error) {
+                console.error('Failed to load configuration:', error);
+                // Fallback to default
+                chatbotBaseUrl = 'https://aventora.aventora.app';
+                console.log('Using fallback chatbotBaseUrl:', chatbotBaseUrl);
+            }
+            
+            // Ensure chatbotBaseUrl is set before loading
+            if (!chatbotBaseUrl) {
+                chatbotBaseUrl = 'https://aventora.aventora.app';
+                console.warn('chatbotBaseUrl was null, using default');
+            }
+            
+            console.log('Starting chatbot load with URL:', chatbotBaseUrl);
+            await loadChatbotWithToken();
         });
 
         // Fetch token from server
@@ -572,11 +606,18 @@ Response:
         // Load chatbot with token
         async function loadChatbotWithToken() {
             try {
+                if (!chatbotBaseUrl) {
+                    console.error('loadChatbotWithToken: chatbotBaseUrl is not set yet');
+                    showStatus('configStatus', 'Error: Chatbot URL not configured. Please set CHATBOT_BASE_URL in .env', 'error');
+                    return;
+                }
                 showStatus('configStatus', 'Generating token...', 'success');
                 currentToken = await fetchToken(selectedLanguage);
+                console.log('Token received, updating embedded chatbot...');
                 updateEmbeddedChatbot();
                 showStatus('configStatus', 'Chatbot loaded successfully!', 'success');
             } catch (error) {
+                console.error('Error in loadChatbotWithToken:', error);
                 showStatus('configStatus', `Error: ${error.message}. Make sure DOMAIN_CHATBOT_API_KEY is configured.`, 'error');
             }
         }
@@ -597,9 +638,59 @@ Response:
         }
 
         function updateEmbeddedChatbot() {
-            if (!currentToken) return;
+            if (!currentToken) {
+                console.warn('updateEmbeddedChatbot: No token available');
+                return;
+            }
+            if (!chatbotBaseUrl) {
+                console.error('updateEmbeddedChatbot: chatbotBaseUrl is not set');
+                return;
+            }
             const iframe = document.getElementById('embeddedFrame');
-            iframe.src = `${chatbotBaseUrl}/autoconnect?token=${currentToken}&lang=${selectedLanguage}`;
+            const loadingDiv = document.getElementById('iframeLoading');
+            if (!iframe) {
+                console.error('updateEmbeddedChatbot: iframe not found');
+                return;
+            }
+            const chatbotUrl = `${chatbotBaseUrl}/autoconnect?token=${currentToken}&lang=${selectedLanguage}`;
+            console.log('Setting iframe src to:', chatbotUrl);
+            
+            // Hide loading indicator and show iframe
+            if (loadingDiv) {
+                loadingDiv.style.display = 'none';
+            }
+            
+            // Set iframe source
+            iframe.src = chatbotUrl;
+            
+            // Ensure iframe is visible and has proper attributes
+            iframe.style.display = 'block';
+            iframe.style.visibility = 'visible';
+            iframe.style.width = '100%';
+            iframe.style.height = '600px';
+            if (!iframe.hasAttribute('allow')) {
+                iframe.setAttribute('allow', 'microphone; camera');
+            }
+            
+            // Add load event listener for debugging
+            iframe.onload = () => {
+                console.log('✅ Iframe loaded successfully');
+                console.log('Iframe dimensions:', {
+                    width: iframe.offsetWidth,
+                    height: iframe.offsetHeight,
+                    display: window.getComputedStyle(iframe).display,
+                    visibility: window.getComputedStyle(iframe).visibility
+                });
+            };
+            
+            iframe.onerror = (error) => {
+                console.error('❌ Iframe load error:', error);
+                if (loadingDiv) {
+                    loadingDiv.style.display = 'block';
+                    loadingDiv.innerHTML = 'Error loading chatbot. Check console for details.';
+                    loadingDiv.style.color = '#d32f2f';
+                }
+            };
         }
 
         async function updateFloatingChatbot() {

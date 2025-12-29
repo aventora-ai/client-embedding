@@ -121,6 +121,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Configuration endpoint - exposes safe config values to client
+app.get('/api/config', (req, res) => {
+  const chatbotBaseUrl = process.env.CHATBOT_BASE_URL;
+  res.json({ 
+    chatbotBaseUrl: chatbotBaseUrl || null
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   const hasApiKey = !!process.env.DOMAIN_CHATBOT_API_KEY;
@@ -141,5 +149,8 @@ app.listen(PORT, () => {
   console.log(`   - CHATBOT_BASE_URL: Your chatbot base URL (e.g., https://yourdomain.aventora.app)`);
   if (!process.env.DOMAIN_CHATBOT_API_KEY) {
     console.log(`\n❌ DOMAIN_CHATBOT_API_KEY not set - token generation will fail`);
+  }
+  if (!process.env.CHATBOT_BASE_URL) {
+    console.log(`\n⚠️  CHATBOT_BASE_URL not set - client will use default URL`);
   }
 });
