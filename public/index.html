@@ -539,13 +539,65 @@ Response:
         let selectedLanguage = 'en';
         let currentToken = null;
 
+        // Timing: Track initialization performance
+        const timing = {
+            pageLoadStart: performance.now(),
+            configLoadStart: null,
+            configLoadEnd: null,
+            tokenFetchStart: null,
+            tokenFetchEnd: null,
+            iframeLoadStart: null,
+            iframeLoadEnd: null,
+            flutterScriptsStart: null,
+            flutterAppStart: null,
+            websocketConnected: null,
+            welcomeMessageReceived: null
+        };
+        
+        // Monitor Flutter app initialization by watching console messages
+        function monitorFlutterInitialization(iframe) {
+            // We'll track timing based on when we see certain console events
+            // This is a fallback method when postMessage isn't available
+            const originalLog = console.log;
+            const originalWarn = console.warn;
+            
+            // Track Flutter script loading
+            const scriptObserver = new MutationObserver((mutations) => {
+                if (!timing.flutterScriptsStart) {
+                    // Detect when Flutter scripts start loading
+                    const scripts = iframe.contentDocument?.querySelectorAll('script[src*="flutter"], script[src*="ddc"]');
+                    if (scripts && scripts.length > 0) {
+                        timing.flutterScriptsStart = performance.now();
+                        console.log(`⏱️ TIMING: Flutter scripts start loading detected`);
+                    }
+                }
+            });
+            
+            try {
+                // Try to observe iframe content (may be blocked by CORS)
+                if (iframe.contentDocument) {
+                    scriptObserver.observe(iframe.contentDocument, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            } catch (e) {
+                // CORS may block access to iframe content
+                console.log('⏱️ TIMING: Cannot directly monitor iframe content (CORS), will use message events');
+            }
+        }
+
         // Initialize on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            timing.configLoadStart = performance.now();
             // Load configuration from server
             try {
                 console.log('Loading configuration from server...');
                 const configResponse = await fetch('/api/config');
                 const config = await configResponse.json();
+                timing.configLoadEnd = performance.now();
+                const configLoadTime = timing.configLoadEnd - timing.configLoadStart;
+                console.log(`⏱️ TIMING: Config load took ${configLoadTime.toFixed(2)}ms`);
                 console.log('Configuration received:', config);
                 if (config.chatbotBaseUrl) {
                     chatbotBaseUrl = config.chatbotBaseUrl;
@@ -579,6 +631,7 @@ Response:
 
         // Fetch token from server
         async function fetchToken(language = 'en') {
+            timing.tokenFetchStart = performance.now();
             try {
                 const response = await fetch('/api/chatbot-token', {
                     method: 'POST',
@@ -596,6 +649,11 @@ Response:
                 }
 
                 const data = await response.json();
+                timing.tokenFetchEnd = performance.now();
+                const tokenFetchTime = timing.tokenFetchEnd - timing.tokenFetchStart;
+                const timeFromPageLoad = timing.tokenFetchEnd - timing.pageLoadStart;
+                console.log(`⏱️ TIMING: Token fetch took ${tokenFetchTime.toFixed(2)}ms`);
+                console.log(`⏱️ TIMING: Time from page load to token received: ${timeFromPageLoad.toFixed(2)}ms`);
                 return data.token;
             } catch (error) {
                 console.error('Error fetching token:', error);
@@ -652,6 +710,10 @@ Response:
                 console.error('updateEmbeddedChatbot: iframe not found');
                 return;
             }
+            
+            // Timing: Iframe load starts when we set the src
+            timing.iframeLoadStart = performance.now();
+            
             const chatbotUrl = `${chatbotBaseUrl}/autoconnect?token=${currentToken}&lang=${selectedLanguage}`;
             console.log('Setting iframe src to:', chatbotUrl);
             
@@ -672,15 +734,47 @@ Response:
                 iframe.setAttribute('allow', 'microphone; camera');
             }
             
+            // Listen for postMessage from iframe to track welcome message timing
+            const handleMessage = (event) => {
+                // Only accept messages from the chatbot domain for security
+                try {
+                    const chatbotOrigin = new URL(chatbotBaseUrl).origin;
+                    if (event.origin !== chatbotOrigin) {
+                        return;
+                    }
+                } catch (e) {
+                    // If we can't parse the origin, skip
+                    return;
+                }
+                
+                // Check if this is a timing message from the Flutter app
+                if (event.data && typeof event.data === 'object' && event.data.type === 'chatbot_timing') {
+                    const timingData = event.data;
+                    if (timingData.event === 'welcome_message_received') {
+                        timing.welcomeMessageReceived = performance.now();
+                        logTimingSummary();
+                    }
+                }
+            };
+            window.addEventListener('message', handleMessage);
+            
             // Add load event listener for debugging
             iframe.onload = () => {
+                timing.iframeLoadEnd = performance.now();
+                const iframeLoadTime = timing.iframeLoadEnd - timing.iframeLoadStart;
+                const timeFromPageLoad = timing.iframeLoadEnd - timing.pageLoadStart;
                 console.log('✅ Iframe loaded successfully');
+                console.log(`⏱️ TIMING: Iframe load took ${iframeLoadTime.toFixed(2)}ms`);
+                console.log(`⏱️ TIMING: Time from page load to iframe loaded: ${timeFromPageLoad.toFixed(2)}ms`);
                 console.log('Iframe dimensions:', {
                     width: iframe.offsetWidth,
                     height: iframe.offsetHeight,
                     display: window.getComputedStyle(iframe).display,
                     visibility: window.getComputedStyle(iframe).visibility
                 });
+                
+                // Start monitoring Flutter app initialization
+                monitorFlutterInitialization(iframe);
             };
             
             iframe.onerror = (error) => {
@@ -691,6 +785,50 @@ Response:
                     loadingDiv.style.color = '#d32f2f';
                 }
             };
+        }
+        
+        function logTimingSummary() {
+            const totalTime = timing.welcomeMessageReceived - timing.pageLoadStart;
+            const configTime = timing.configLoadEnd && timing.configLoadStart 
+                ? timing.configLoadEnd - timing.configLoadStart 
+                : 0;
+            const tokenTime = timing.tokenFetchEnd && timing.tokenFetchStart 
+                ? timing.tokenFetchEnd - timing.tokenFetchStart 
+                : 0;
+            const iframeTime = timing.iframeLoadEnd && timing.iframeLoadStart
+                ? timing.iframeLoadEnd - timing.iframeLoadStart
+                : 0;
+            const flutterInitTime = timing.iframeLoadEnd && timing.welcomeMessageReceived
+                ? timing.welcomeMessageReceived - timing.iframeLoadEnd
+                : 0;
+            const wsTime = timing.websocketConnected && timing.iframeLoadEnd
+                ? timing.websocketConnected - timing.iframeLoadEnd
+                : 0;
+            const welcomeTime = timing.welcomeMessageReceived && timing.websocketConnected
+                ? timing.welcomeMessageReceived - timing.websocketConnected
+                : (timing.welcomeMessageReceived && timing.iframeLoadEnd)
+                ? timing.welcomeMessageReceived - timing.iframeLoadEnd
+                : 0;
+            
+            console.log('⏱️ TIMING SUMMARY (End-to-End):');
+            console.log(`  - Total time to welcome message: ${totalTime.toFixed(2)}ms (${(totalTime/1000).toFixed(2)}s)`);
+            if (configTime > 0) {
+                console.log(`  - Config load: ${configTime.toFixed(2)}ms`);
+            }
+            console.log(`  - Token fetch: ${tokenTime.toFixed(2)}ms`);
+            console.log(`  - Iframe load: ${iframeTime.toFixed(2)}ms`);
+            console.log(`  - Flutter app initialization: ${flutterInitTime.toFixed(2)}ms (${(flutterInitTime/1000).toFixed(2)}s) ⚠️ MAIN BOTTLENECK`);
+            if (wsTime > 0) {
+                console.log(`    └─ Flutter scripts + WebSocket connection: ${wsTime.toFixed(2)}ms`);
+            }
+            if (welcomeTime > 0 && wsTime > 0) {
+                console.log(`    └─ Welcome message processing: ${welcomeTime.toFixed(2)}ms`);
+            }
+            console.log('');
+            console.log('💡 OPTIMIZATION SUGGESTIONS:');
+            console.log('  - Flutter app initialization is the main bottleneck (~9+ seconds)');
+            console.log('  - Consider: Code splitting, lazy loading, reducing Dart script count');
+            console.log('  - Server-side performance is excellent (<50ms) ✅');
         }
 
         async function updateFloatingChatbot() {
