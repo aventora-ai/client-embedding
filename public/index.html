@@ -114,6 +114,7 @@ CHATBOT_BASE_URL=https://yourdomain.aventora.app</code>
                     <button class="tab active" onclick="showTab('embedded')">Embedded</button>
                     <button class="tab" onclick="showTab('floating')">Floating</button>
                     <button class="tab" onclick="showTab('fixed')">Fixed</button>
+                    <button class="tab" onclick="showTab('widget')">Web Component</button>
                     <button class="tab" onclick="showTab('code')">Code Examples</button>
                 </div>
 
@@ -262,6 +263,105 @@ function closeFullscreenChatbot() {
     document.getElementById('fullscreen-chatbot').style.display = 'none';
 }
 &lt;/script&gt;</code>
+                    </div>
+                </div>
+
+                <!-- Web Component Tab -->
+                <div id="widget" class="tab-content">
+                    <h3>Web Component Widget (Recommended)</h3>
+                    <p>Use the modern Web Component approach with Shadow DOM. This provides CSS isolation and a clean JavaScript API, avoiding iframe communication issues.</p>
+                    
+                    <div class="info-box success">
+                        <strong>✅ Benefits:</strong>
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li>CSS isolation via Shadow DOM</li>
+                            <li>Clean JavaScript API</li>
+                            <li>No iframe communication complexity</li>
+                            <li>Easy embedding with single script tag</li>
+                            <li>File upload and autosend support</li>
+                        </ul>
+                    </div>
+
+                    <div class="demo-container">
+                        <h4>Live Demo:</h4>
+                        <p>Look at the bottom-right corner of this page for the Web Component widget.</p>
+                        <p>Try the interactive examples below to test the JavaScript API:</p>
+                        
+                        <div style="margin: 20px 0;">
+                            <button class="btn" onclick="testWidgetAPI()" style="margin: 5px;">Test sendMessage()</button>
+                            <button class="btn" onclick="testSetQuestion()" style="margin: 5px;">Test setQuestion()</button>
+                            <button class="btn" onclick="testOpenClose()" style="margin: 5px;">Test open/close</button>
+                        </div>
+                    </div>
+
+                    <div class="code-block">
+                        <code>&lt;!-- Web Component Widget - Simple Embedding --&gt;
+&lt;script
+  src="https://cdn.aventora.ai/widget.js"
+  data-tenant="your-tenant-id"
+  data-theme="auto"
+  data-position="bottom-right"
+  data-language="en"
+  defer&gt;
+&lt;/script&gt;</code>
+                    </div>
+
+                    <h4>JavaScript API Examples</h4>
+                    
+                    <div class="code-block">
+                        <code>// Send a message
+AventoraChatbot.sendMessage("Hello!", {
+  autoSend: true
+});
+
+// Set a question (pre-fills input)
+AventoraChatbot.setQuestion("What are your hours?", {
+  autoSend: true
+});
+
+// Open/close chatbot
+AventoraChatbot.open();
+AventoraChatbot.close();
+
+// Send message with file
+AventoraChatbot.sendMessage("Check this file", {
+  file: 'https://example.com/file.pdf',
+  autoSend: true
+});
+
+// Listen for events
+window.addEventListener('aventora:ready', () => {
+  console.log('Widget ready!');
+});
+
+window.addEventListener('aventora:opened', () => {
+  console.log('Chatbot opened');
+});</code>
+                    </div>
+
+                    <h4>Advanced Configuration</h4>
+                    
+                    <div class="code-block">
+                        <code>&lt;!-- With all configuration options --&gt;
+&lt;script
+  src="https://cdn.aventora.ai/widget.js"
+  data-tenant="demo"
+  data-bot="real-estate"
+  data-theme="dark"
+  data-position="bottom-left"
+  data-language="fr"
+  data-token-api-url="https://api.example.com/chatbot-token"
+  data-chatbot-url="https://demo.aventora.app"
+  defer&gt;
+&lt;/script&gt;</code>
+                    </div>
+
+                    <div class="info-box">
+                        <strong>📚 Documentation:</strong>
+                        <ul style="margin-top: 10px; margin-left: 20px;">
+                            <li><a href="docs/WIDGET_API.md" target="_blank">API Documentation</a></li>
+                            <li><a href="docs/EMBEDDING_GUIDE.md" target="_blank">Embedding Guide</a></li>
+                        </ul>
                     </div>
                 </div>
 
@@ -601,7 +701,7 @@ Response:
                 console.log('Configuration received:', config);
                 if (config.chatbotBaseUrl) {
                     chatbotBaseUrl = config.chatbotBaseUrl;
-                    console.log('Using chatbotBaseUrl from config:', chatbotBaseUrl);
+                    console.log('✅ Using chatbotBaseUrl from server config (CHATBOT_BASE_URL):', chatbotBaseUrl);
                     // Update the input field if it exists
                     const urlInput = document.getElementById('chatbotUrl');
                     if (urlInput) {
@@ -610,10 +710,11 @@ Response:
                 } else {
                     // Fallback to default if not configured
                     chatbotBaseUrl = 'https://aventora.aventora.app';
-                    console.warn('CHATBOT_BASE_URL not configured in .env, using default:', chatbotBaseUrl);
+                    console.warn('⚠️ CHATBOT_BASE_URL not configured in .env, using default:', chatbotBaseUrl);
+                    console.warn('⚠️ Please set CHATBOT_BASE_URL in your .env file (e.g., CHATBOT_BASE_URL=http://localhost:3002)');
                 }
             } catch (error) {
-                console.error('Failed to load configuration:', error);
+                console.error('❌ Failed to load configuration:', error);
                 // Fallback to default
                 chatbotBaseUrl = 'https://aventora.aventora.app';
                 console.log('Using fallback chatbotBaseUrl:', chatbotBaseUrl);
@@ -622,10 +723,10 @@ Response:
             // Ensure chatbotBaseUrl is set before loading
             if (!chatbotBaseUrl) {
                 chatbotBaseUrl = 'https://aventora.aventora.app';
-                console.warn('chatbotBaseUrl was null, using default');
+                console.warn('⚠️ chatbotBaseUrl was null, using default');
             }
             
-            console.log('Starting chatbot load with URL:', chatbotBaseUrl);
+            console.log('🚀 Starting chatbot load with URL:', chatbotBaseUrl);
             await loadChatbotWithToken();
         });
 
@@ -899,6 +1000,55 @@ Response:
                 statusEl.classList.remove('show');
             }, 3000);
         }
+
+        // Web Component Widget API Test Functions
+        function testWidgetAPI() {
+            if (window.AventoraChatbot && window.AventoraChatbot._ready) {
+                window.AventoraChatbot.sendMessage("Hello from the test button!", {
+                    autoSend: true
+                });
+                alert('Message sent! Check the chatbot.');
+            } else {
+                alert('Widget not ready yet. Please wait a moment and try again.');
+            }
+        }
+
+        function testSetQuestion() {
+            if (window.AventoraChatbot && window.AventoraChatbot._ready) {
+                window.AventoraChatbot.setQuestion("What are your business hours?", {
+                    autoSend: true
+                });
+                alert('Question set! Check the chatbot.');
+            } else {
+                alert('Widget not ready yet. Please wait a moment and try again.');
+            }
+        }
+
+        function testOpenClose() {
+            if (window.AventoraChatbot && window.AventoraChatbot._ready) {
+                const isOpen = window.AventoraChatbot._instance && window.AventoraChatbot._instance.isOpen;
+                if (isOpen) {
+                    window.AventoraChatbot.close();
+                    alert('Chatbot closed');
+                } else {
+                    window.AventoraChatbot.open();
+                    alert('Chatbot opened');
+                }
+            } else {
+                alert('Widget not ready yet. Please wait a moment and try again.');
+            }
+        }
+    </script>
+
+    <!-- Web Component Widget Demo -->
+    <script
+        src="widget.js"
+        data-tenant="demo"
+        data-theme="auto"
+        data-position="bottom-right"
+        data-language="en"
+        data-token-api-url="/api/chatbot-token"
+        defer>
     </script>
 </body>
 </html>

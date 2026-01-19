@@ -1,0 +1,18 @@
+/**
+ * Aventora Widget CSS
+ * 
+ * Base styles for the widget. Most styles are injected inline into Shadow DOM,
+ * but this file can be used for reference or if loading CSS separately.
+ */
+
+/* Note: These styles are primarily injected via JavaScript into Shadow DOM.
+ * This file serves as documentation and reference. */
+
+:host {
+  --widget-primary: #2563eb;
+  --widget-bg: #ffffff;
+  --widget-text: #333333;
+  --widget-border: #e0e0e0;
+  --widget-shadow: rgba(0, 0, 0, 0.15);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}

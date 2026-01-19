@@ -73,21 +73,38 @@ The Aventora Chatbot requires token-based authentication. The flow is:
 
 ## 📖 What's Included
 
-This example application demonstrates three main embedding methods:
+This example application demonstrates four main embedding methods:
 
-### 1. **Embedded Mode**
+### 1. **Web Component Widget (Recommended)**
+Modern Web Component approach with Shadow DOM. Provides CSS isolation and a clean JavaScript API, avoiding iframe communication issues.
+
+**Quick Start:**
+```html
+<script
+  src="https://cdn.aventora.ai/widget.js"
+  data-tenant="your-tenant-id"
+  data-theme="auto"
+  data-position="bottom-right"
+  defer>
+</script>
+```
+
+See [WIDGET_API.md](docs/WIDGET_API.md) and [EMBEDDING_GUIDE.md](docs/EMBEDDING_GUIDE.md) for full documentation.
+
+### 2. **Embedded Mode**
 Embed the chatbot directly in your page content. Perfect for dedicated chat pages or sections.
 
-### 2. **Floating Mode**
+### 3. **Floating Mode**
 Display the chatbot as a floating widget in the corner of your page. Users can minimize/restore it.
 
-### 3. **Fixed/Fullscreen Mode**
+### 4. **Fixed/Fullscreen Mode**
 Display the chatbot as a fullscreen overlay. Useful for mobile or when you want maximum focus on the chat.
 
 ## 💻 Code Examples
 
 The application includes complete, copy-paste ready code examples for:
 
+- **Web Component widget** (recommended - single script tag)
 - **HTML-only embedding** (no JavaScript required)
 - **HTML + JavaScript** floating widget implementation
 - **React component** example
@@ -104,8 +121,13 @@ client-embedding/
 ├── .env.example       # Environment variables template
 ├── README.md          # This file
 └── public/
-    ├── index.html     # Main example page
-    └── styles.css     # Styling
+    ├── index.html        # Main example page
+    ├── styles.css        # Styling
+    ├── widget.js         # Web Component loader script
+    ├── aventora-chat.js  # Web Component implementation
+    └── docs/
+        ├── WIDGET_API.md      # Web Component API documentation
+        └── EMBEDDING_GUIDE.md # Embedding guide
 ```
 
 ## 🔧 Configuration

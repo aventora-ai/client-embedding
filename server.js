@@ -7,7 +7,134 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(express.json());
+
+// CORS middleware for widget endpoints (must be before routes)
+app.use('/api/widget', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+/**
+ * Widget API Proxy Endpoints
+ * 
+ * These endpoints proxy requests to the domain chatbot API server
+ * to avoid CORS issues when the widget is embedded on different domains.
+ * 
+ * IMPORTANT: These routes must be defined BEFORE static middleware
+ * to ensure they are matched correctly.
+ */
+
+// Proxy for widget session creation
+app.post('/api/widget/session', async (req, res) => {
+  console.log('[widget-session] Route hit!', req.body);
+  try {
+    const domainChatbotApiUrl = process.env.DOMAIN_CHATBOT_API_URL || 'https://api.aventora.ai';
+    const apiUrl = `${domainChatbotApiUrl}/v1/widget/session`;
+    
+    console.log('[widget-session] Proxying to:', apiUrl);
+    console.log('[widget-session] Request body:', req.body);
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(req.body)
+    });
+
+    if (!response.ok) {
+      // If widget endpoint doesn't exist (404), return error so widget can fallback
+      if (response.status === 404) {
+        console.log('[widget-session] Widget endpoint not found, widget will use fallback');
+        return res.status(404).json({
+          error: 'Widget endpoint not available',
+          fallback: true
+        });
+      }
+      
+      const errorText = await response.text();
+      console.error('[widget-session] API error:', response.status, errorText);
+      return res.status(response.status).json({
+        error: 'Failed to create session',
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    console.log('[widget-session] Session created:', data.session_id ? 'success' : 'no session_id');
+    res.json(data);
+  } catch (error) {
+    console.error('[widget-session] Proxy error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+});
+
+// Proxy for widget message sending
+app.post('/api/widget/message', async (req, res) => {
+  console.log('[widget-message] Route hit!', req.body);
+  try {
+    const domainChatbotApiUrl = process.env.DOMAIN_CHATBOT_API_URL || 'https://api.aventora.ai';
+    const apiUrl = `${domainChatbotApiUrl}/v1/widget/message`;
+    
+    // Forward Authorization header if present
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (req.headers.authorization) {
+      headers['Authorization'] = req.headers.authorization;
+    }
+    
+    console.log('[widget-message] Proxying to:', apiUrl);
+    console.log('[widget-message] Has auth:', !!req.headers.authorization);
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(req.body)
+    });
+
+    if (!response.ok) {
+      // If widget endpoint doesn't exist (404), return error so widget can fallback
+      if (response.status === 404) {
+        console.log('[widget-message] Widget endpoint not found, widget will use fallback');
+        return res.status(404).json({
+          error: 'Widget endpoint not available',
+          fallback: true
+        });
+      }
+      
+      const errorText = await response.text();
+      console.error('[widget-message] API error:', response.status, errorText);
+      return res.status(response.status).json({
+        error: 'Failed to send message',
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('[widget-message] Proxy error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+});
+
+// Static file serving (must be after API routes)
 app.use(express.static(path.join(__dirname, 'public')));
+// Serve widget files
+app.use('/widget', express.static(path.join(__dirname, 'widget')));
 
 /**
  * Token Generation Endpoint
@@ -121,11 +248,18 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Widget demo route
+app.get('/widget-demo', (req, res) => {
+  res.sendFile(path.join(__dirname, 'widget', 'demo.html'));
+});
+
 // Configuration endpoint - exposes safe config values to client
 app.get('/api/config', (req, res) => {
   const chatbotBaseUrl = process.env.CHATBOT_BASE_URL;
+  const domainChatbotApiUrl = process.env.DOMAIN_CHATBOT_API_URL || 'https://api.aventora.ai';
   res.json({ 
-    chatbotBaseUrl: chatbotBaseUrl || null
+    chatbotBaseUrl: chatbotBaseUrl || null,
+    apiBaseUrl: domainChatbotApiUrl
   });
 });
 
